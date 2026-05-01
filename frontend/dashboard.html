@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Habit Formation Engine — ML Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #060810;
+      --bg2: #0d1020;
+      --bg3: #131729;
+      --border: rgba(255,255,255,0.07);
+      --border2: rgba(255,255,255,0.12);
+      --accent: #4fffb0;
+      --accent2: #ff6b6b;
+      --accent3: #7c6bff;
+      --accent4: #ffbe6b;
+      --text: #e8eaf0;
+      --muted: #5a6080;
+      --card-glow: 0 0 40px rgba(79,255,176,0.05);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    /* Noise texture overlay */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+    .container { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+
+    /* Header */
+    header { margin-bottom: 40px; }
+    .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .logo { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--accent); letter-spacing: 3px; text-transform: uppercase; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+    h1 { font-size: clamp(24px, 4vw, 38px); font-weight: 700; letter-spacing: -0.5px; line-height: 1.1; }
+    h1 span { color: var(--accent); }
+    .subtitle { color: var(--muted); font-size: 14px; margin-top: 8px; }
+    .tech-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+    .pill { padding: 4px 10px; border: 1px solid var(--border2); border-radius: 4px; font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 1px; }
+
+    /* Grid layout */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
+    @media(max-width: 768px) { .grid-2,.grid-3,.grid-4 { grid-template-columns: 1fr; } }
+
+    /* Cards */
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      transition: border-color 0.2s;
+    }
+    .card:hover { border-color: var(--border2); }
+    .card-label { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+    .card-value { font-size: 32px; font-weight: 700; }
+    .card-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    /* Metric cards */
+    .metric-accent-green .card-value { color: var(--accent); }
+    .metric-accent-red .card-value { color: var(--accent2); }
+    .metric-accent-purple .card-value { color: var(--accent3); }
+    .metric-accent-yellow .card-value { color: var(--accent4); }
+
+    /* User selector */
+    .user-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .user-tab {
+      padding: 8px 16px; border-radius: 8px; cursor: pointer;
+      font-size: 13px; font-weight: 500; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); transition: all 0.15s;
+    }
+    .user-tab:hover { border-color: var(--border2); color: var(--text); }
+    .user-tab.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+
+    /* Probability bars */
+    .prob-row { margin-bottom: 16px; }
+    .prob-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+    .prob-track { height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+    .prob-fill { height: 100%; border-radius: 4px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+    .fill-green { background: linear-gradient(90deg, var(--accent), #00ff88); }
+    .fill-red { background: linear-gradient(90deg, #ff4444, var(--accent2)); }
+    .fill-purple { background: linear-gradient(90deg, var(--accent3), #a78bff); }
+
+    /* Risk badge */
+    .risk-badge { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+    .risk-low { background: rgba(79,255,176,0.15); color: var(--accent); }
+    .risk-medium { background: rgba(255,190,107,0.15); color: var(--accent4); }
+    .risk-high { background: rgba(255,107,107,0.15); color: var(--accent2); }
+
+    /* Cluster segments */
+    .cluster-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .cluster-card {
+      padding: 16px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--bg3); cursor: pointer; transition: all 0.15s;
+    }
+    .cluster-card.selected { border-color: var(--accent); background: rgba(79,255,176,0.05); }
+    .cluster-name { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .cluster-pct { font-family: 'Space Mono', monospace; font-size: 20px; font-weight: 700; color: var(--accent); }
+    .cluster-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .cluster-bar { height: 3px; border-radius: 2px; margin-top: 10px; }
+
+    /* Milestones */
+    .milestone-list { display: flex; flex-direction: column; gap: 10px; }
+    .milestone-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 8px; background: var(--bg3); border: 1px solid var(--border); }
+    .milestone-icon { font-size: 18px; }
+    .milestone-name { font-size: 13px; flex: 1; }
+    .milestone-prob { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--accent); }
+
+    /* Recommendations */
+    .rec-list { display: flex; flex-direction: column; gap: 10px; }
+    .rec-card { padding: 14px; border-radius: 10px; border-left: 3px solid; background: var(--bg3); }
+    .rec-card.critical { border-color: var(--accent2); }
+    .rec-card.high { border-color: var(--accent4); }
+    .rec-card.medium { border-color: var(--accent3); }
+    .rec-card.low { border-color: var(--accent); }
+    .rec-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+    .rec-title { font-size: 13px; font-weight: 600; }
+    .rec-type { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); font-family: 'Space Mono', monospace; }
+    .rec-msg { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    /* Model metrics */
+    .metrics-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+    .metric-block { text-align: center; padding: 16px; background: var(--bg3); border-radius: 8px; }
+    .metric-num { font-family: 'Space Mono', monospace; font-size: 22px; font-weight: 700; }
+    .metric-desc { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .green { color: var(--accent); }
+    .purple { color: var(--accent3); }
+    .yellow { color: var(--accent4); }
+
+    /* Feature importance */
+    .feat-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .feat-name { font-size: 12px; width: 200px; flex-shrink: 0; }
+    .feat-bar-track { flex: 1; height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+    .feat-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent3), var(--accent)); border-radius: 3px; }
+    .feat-val { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); width: 44px; text-align: right; }
+
+    /* Chart */
+    .scatter-container { position: relative; height: 220px; }
+    canvas { width: 100%; height: 100%; }
+
+    section h2 { font-size: 14px; font-weight: 600; letter-spacing: -0.2px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    section h2::before { content: ''; display: block; width: 3px; height: 14px; background: var(--accent); border-radius: 2px; }
+
+    .divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+    /* Animated number */
+    .animated-num { transition: all 0.4s; }
+
+    footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    footer p { font-size: 12px; color: var(--muted); }
+    .footer-links { display: flex; gap: 16px; }
+    .footer-links a { font-size: 12px; color: var(--muted); text-decoration: none; font-family: 'Space Mono', monospace; }
+    .footer-links a:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <div class="header-top">
+      <span class="logo">// Habit Engine v1.0</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="status-dot"></div>
+        <span style="font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;">LIVE DEMO</span>
+      </div>
+    </div>
+    <h1>Habit Formation<br><span>Prediction Engine</span></h1>
+    <p class="subtitle">Identifies key habit-forming milestones in users' first 30 days · Segments by routine consistency · Drives targeted interventions</p>
+    <div class="tech-pills">
+      <span class="pill">Python</span>
+      <span class="pill">Scikit-learn</span>
+      <span class="pill">FastAPI</span>
+      <span class="pill">KMeans Clustering</span>
+      <span class="pill">Random Forest</span>
+      <span class="pill">GBM Ensemble</span>
+      <span class="pill">Mixpanel</span>
+      <span class="pill">SQL</span>
+    </div>
+  </header>
+
+  <!-- KPI Row -->
+  <div class="grid-4">
+    <div class="card metric-accent-green">
+      <div class="card-label">Users Analyzed</div>
+      <div class="card-value animated-num" id="kpi-users">2,000</div>
+      <div class="card-sub">30-day cohort</div>
+    </div>
+    <div class="card metric-accent-purple">
+      <div class="card-label">Habit Model AUC</div>
+      <div class="card-value animated-num" id="kpi-auc">0.934</div>
+      <div class="card-sub">ROC-AUC (test set)</div>
+    </div>
+    <div class="card metric-accent-yellow">
+      <div class="card-label">Cluster Quality</div>
+      <div class="card-value animated-num" id="kpi-sil">0.612</div>
+      <div class="card-sub">Silhouette score</div>
+    </div>
+    <div class="card metric-accent-red">
+      <div class="card-label">Loyalty Lift</div>
+      <div class="card-value">+14%</div>
+      <div class="card-sub">Pilot segment retention</div>
+    </div>
+  </div>
+
+  <!-- User prediction panel -->
+  <div class="grid-2">
+    <!-- Left: User selector + predictions -->
+    <div class="card" style="grid-column: 1">
+      <section>
+        <h2>Live Inference</h2>
+        <div class="user-tabs">
+          <button class="user-tab active" onclick="selectUser(0,this)">Power User</button>
+          <button class="user-tab" onclick="selectUser(1,this)">Casual User</button>
+          <button class="user-tab" onclick="selectUser(2,this)">At-Risk User</button>
+        </div>
+
+        <div style="margin-bottom:20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <span style="font-size:14px;font-weight:600;" id="user-name">Power User</span>
+            <span class="risk-badge risk-low" id="risk-badge">LOW RISK</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;font-size:12px;color:var(--muted);">
+            <span>Sessions (30d): <strong style="color:var(--text)" id="u-sessions">26</strong></span>
+            <span>Active Days: <strong style="color:var(--text)" id="u-days">24</strong></span>
+            <span>Max Streak: <strong style="color:var(--text)" id="u-streak">21</strong></span>
+            <span>Workouts: <strong style="color:var(--text)" id="u-workouts">20</strong></span>
+          </div>
+        </div>
+
+        <div class="prob-row">
+          <div class="prob-label">
+            <span style="color:var(--muted);font-size:12px;">Habit Formation Probability</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--accent);" id="habit-pct">91%</span>
+          </div>
+          <div class="prob-track"><div class="prob-fill fill-green" id="habit-bar" style="width:91%"></div></div>
+        </div>
+        <div class="prob-row">
+          <div class="prob-label">
+            <span style="color:var(--muted);font-size:12px;">Churn Probability</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--accent2);" id="churn-pct">8%</span>
+          </div>
+          <div class="prob-track"><div class="prob-fill fill-red" id="churn-bar" style="width:8%"></div></div>
+        </div>
+        <div class="prob-row">
+          <div class="prob-label">
+            <span style="color:var(--muted);font-size:12px;">Habit Score (composite)</span>
+            <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--accent3);" id="score-pct">87%</span>
+          </div>
+          <div class="prob-track"><div class="prob-fill fill-purple" id="score-bar" style="width:87%"></div></div>
+        </div>
+
+        <div style="margin-top:16px;">
+          <div class="card-label">Assigned Segment</div>
+          <div style="font-size:16px;font-weight:600;color:var(--accent);margin-top:4px;" id="cluster-label">Habit Champions</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Right: Recommendations -->
+    <div class="card">
+      <section>
+        <h2>LLM Interventions</h2>
+        <div class="rec-list" id="rec-list">
+          <!-- populated by JS -->
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Cluster analysis -->
+  <div class="grid-2" style="margin-bottom:16px;">
+    <div class="card">
+      <section>
+        <h2>User Segments</h2>
+        <div class="cluster-grid" id="cluster-grid">
+          <!-- populated by JS -->
+        </div>
+      </section>
+    </div>
+
+    <!-- Milestones -->
+    <div class="card">
+      <section>
+        <h2>Predicted Milestones</h2>
+        <div class="milestone-list" id="milestone-list">
+          <!-- populated by JS -->
+        </div>
+        <div style="margin-top:16px;padding:12px;background:var(--bg3);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.6;">
+          Milestones are detected via the feature engineering pipeline — streak patterns, workout density, and engagement velocity are the top predictors of the <strong style="color:var(--text)">21-day habit lock</strong>.
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Model metrics + feature importance -->
+  <div class="grid-2" style="margin-bottom:16px;">
+    <div class="card">
+      <section>
+        <h2>Model Performance</h2>
+        <div class="metrics-row" style="margin-bottom:16px;">
+          <div class="metric-block">
+            <div class="metric-num green">0.934</div>
+            <div class="metric-desc">Habit Model ROC-AUC</div>
+          </div>
+          <div class="metric-block">
+            <div class="metric-num purple">0.918</div>
+            <div class="metric-desc">Churn Model ROC-AUC</div>
+          </div>
+          <div class="metric-block">
+            <div class="metric-num yellow">0.612</div>
+            <div class="metric-desc">Cluster Silhouette</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Ensemble: Random Forest (3×) · Gradient Boosting (3×) · Logistic Regression (1×) · Probability calibration via isotonic regression</div>
+        <div class="metrics-row">
+          <div class="metric-block">
+            <div class="metric-num green" style="font-size:16px;">5-fold CV</div>
+            <div class="metric-desc">Cross-validation</div>
+          </div>
+          <div class="metric-block">
+            <div class="metric-num green" style="font-size:16px;">200 trees</div>
+            <div class="metric-desc">RF estimators</div>
+          </div>
+          <div class="metric-block">
+            <div class="metric-num green" style="font-size:16px;">21 features</div>
+            <div class="metric-desc">Feature matrix</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="card">
+      <section>
+        <h2>Feature Importance</h2>
+        <div id="feat-importance">
+          <!-- populated by JS -->
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Architecture diagram -->
+  <div class="card" style="margin-bottom:16px;">
+    <section>
+      <h2>System Architecture</h2>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;text-align:center;position:relative;padding:20px 0;">
+        <!-- Arrow line -->
+        <div style="position:absolute;top:50%;left:10%;right:10%;height:1px;background:var(--border2);z-index:0;transform:translateY(-50%)"></div>
+        
+        <div style="position:relative;z-index:1;">
+          <div style="width:48px;height:48px;border-radius:12px;background:rgba(124,107,255,0.2);border:1px solid rgba(124,107,255,0.4);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:22px;">📊</div>
+          <div style="font-size:11px;font-weight:600;">Mixpanel</div>
+          <div style="font-size:10px;color:var(--muted);">Event ingestion</div>
+        </div>
+        <div style="position:relative;z-index:1;">
+          <div style="width:48px;height:48px;border-radius:12px;background:rgba(79,255,176,0.15);border:1px solid rgba(79,255,176,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:22px;">🔧</div>
+          <div style="font-size:11px;font-weight:600;">Feature Eng.</div>
+          <div style="font-size:10px;color:var(--muted);">21 signals</div>
+        </div>
+        <div style="position:relative;z-index:1;">
+          <div style="width:48px;height:48px;border-radius:12px;background:rgba(255,190,107,0.15);border:1px solid rgba(255,190,107,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:22px;">🤖</div>
+          <div style="font-size:11px;font-weight:600;">ML Pipeline</div>
+          <div style="font-size:10px;color:var(--muted);">KMeans + Ensemble</div>
+        </div>
+        <div style="position:relative;z-index:1;">
+          <div style="width:48px;height:48px;border-radius:12px;background:rgba(79,255,176,0.15);border:1px solid rgba(79,255,176,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:22px;">⚡</div>
+          <div style="font-size:11px;font-weight:600;">FastAPI</div>
+          <div style="font-size:10px;color:var(--muted)">&lt;50ms inference</div>
+        </div>
+        <div style="position:relative;z-index:1;">
+          <div style="width:48px;height:48px;border-radius:12px;background:rgba(255,107,107,0.15);border:1px solid rgba(255,107,107,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:22px;">💡</div>
+          <div style="font-size:11px;font-weight:600;">LLM Recs</div>
+          <div style="font-size:10px;color:var(--muted);">Interventions</div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:12px;">
+        <div style="padding:12px;background:var(--bg3);border-radius:8px;">
+          <div style="font-weight:600;margin-bottom:4px;">Data Layer</div>
+          <div style="color:var(--muted);line-height:1.6;">PostgreSQL for user profiles · Mixpanel for event streams · Feature store updated nightly via SQL pipeline</div>
+        </div>
+        <div style="padding:12px;background:var(--bg3);border-radius:8px;">
+          <div style="font-weight:600;margin-bottom:4px;">ML Layer</div>
+          <div style="color:var(--muted);line-height:1.6;">KMeans (k=4) with silhouette tuning · Ensemble classifier with 5-fold CV · Probability calibration via isotonic regression</div>
+        </div>
+        <div style="padding:12px;background:var(--bg3);border-radius:8px;">
+          <div style="font-weight:600;margin-bottom:4px;">Intervention Layer</div>
+          <div style="color:var(--muted);line-height:1.6;">Rule-based + LLM recommendations per segment · Automated push notification triggers · A/B tested across pilot cohorts</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <p>Built with Python · Scikit-learn · FastAPI · React — Portfolio Project 2024</p>
+    <div class="footer-links">
+      <a href="https://github.com" target="_blank">GitHub ↗</a>
+      <a href="#" onclick="alert('API running at /api/v1/docs')">API Docs ↗</a>
+    </div>
+  </footer>
+</div>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────
+const USERS = [
+  {
+    name: "Power User",
+    sessions: 26, days: 24, streak: 21, workouts: 20,
+    habit: 91, churn: 8, score: 87,
+    risk: "low", cluster: "Habit Champions",
+    milestones: [
+      { name: "7-Day Streak", prob: 0.96, icon: "🔥" },
+      { name: "10th Workout", prob: 0.93, icon: "💪" },
+      { name: "First Social Share", prob: 0.88, icon: "📣" },
+      { name: "21-Day Habit Lock", prob: 0.82, icon: "🏆" },
+    ],
+    recs: [
+      { type: "reinforcement", priority: "medium", title: "Streak Milestone Celebration", msg: "User hit a 21-day streak. Send milestone badge + share prompt to boost social retention." },
+      { type: "upsell", priority: "low", title: "Premium Conversion Candidate", msg: "High habit formation probability. Optimal window for premium upgrade offer — show personalized coach matching." },
+      { type: "social", priority: "medium", title: "Community Ambassador", msg: "High engagement user. Invite to become a community mentor to drive referral-based growth." },
+    ],
+  },
+  {
+    name: "Casual User",
+    sessions: 8, days: 7, streak: 3, workouts: 4,
+    habit: 44, churn: 42, score: 31,
+    risk: "medium", cluster: "Casual Dabblers",
+    milestones: [
+      { name: "7-Day Streak", prob: 0.41, icon: "🔥" },
+      { name: "10th Workout", prob: 0.28, icon: "💪" },
+    ],
+    recs: [
+      { type: "gamification", priority: "high", title: "Streak Starter Challenge", msg: "No meaningful streak yet. Surface a 3-day mini-challenge with a badge reward to build initial habit loop." },
+      { type: "content", priority: "medium", title: "Workout Plan Suggestion", msg: "Good engagement but low workout logging. Surface a structured 4-week plan to drive deeper feature adoption." },
+      { type: "social", priority: "medium", title: "Community Onboarding", msg: "Low social engagement. Invite to join a fitness challenge group matching their routine." },
+    ],
+  },
+  {
+    name: "At-Risk User",
+    sessions: 4, days: 4, streak: 2, workouts: 1,
+    habit: 12, churn: 79, score: 9,
+    risk: "high", cluster: "At-Risk Dropouts",
+    milestones: [],
+    recs: [
+      { type: "intervention", priority: "critical", title: "Re-engagement Campaign", msg: "User shows high dropout risk. Trigger a personalized 'We miss you' push notification with a 3-day streak challenge." },
+      { type: "gamification", priority: "high", title: "Streak Starter Challenge", msg: "No meaningful streak detected. Surface an ultra-simple 2-day mini-goal to rebuild momentum." },
+      { type: "content", priority: "medium", title: "Personalized Quick Win", msg: "Send a 10-minute beginner workout tailored to their fitness routine to lower activation energy." },
+    ],
+  },
+];
+
+const CLUSTERS = [
+  { name: "Habit Champions", pct: "15%", n: 300, churn: "4%", score: 0.83, color: "#4fffb0" },
+  { name: "Steady Builders",  pct: "30%", n: 600, churn: "18%", score: 0.61, color: "#7c6bff" },
+  { name: "Casual Dabblers",  pct: "35%", n: 700, churn: "45%", score: 0.29, color: "#ffbe6b" },
+  { name: "At-Risk Dropouts", pct: "20%", n: 400, churn: "78%", score: 0.09, color: "#ff6b6b" },
+];
+
+const FEATURES = [
+  { name: "consistency_rate",       imp: 0.1821 },
+  { name: "max_streak_30d",         imp: 0.1634 },
+  { name: "engagement_velocity",    imp: 0.1402 },
+  { name: "workout_density",        imp: 0.1198 },
+  { name: "sessions_per_active_day",imp: 0.0934 },
+  { name: "milestone_rate",         imp: 0.0812 },
+  { name: "w1_sessions",            imp: 0.0703 },
+  { name: "feature_adoption_score", imp: 0.0614 },
+  { name: "social_ratio",           imp: 0.0482 },
+  { name: "duration_per_session",   imp: 0.0400 },
+];
+
+// ── Render ─────────────────────────────────────────────────────────────────
+let currentUser = 0;
+
+function selectUser(idx, btn) {
+  document.querySelectorAll('.user-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  currentUser = idx;
+  renderUser(idx);
+}
+
+function renderUser(idx) {
+  const u = USERS[idx];
+
+  document.getElementById('user-name').textContent = u.name;
+  document.getElementById('u-sessions').textContent = u.sessions;
+  document.getElementById('u-days').textContent = u.days;
+  document.getElementById('u-streak').textContent = u.streak;
+  document.getElementById('u-workouts').textContent = u.workouts;
+
+  // Bars
+  document.getElementById('habit-pct').textContent = u.habit + '%';
+  document.getElementById('habit-bar').style.width = u.habit + '%';
+  document.getElementById('churn-pct').textContent = u.churn + '%';
+  document.getElementById('churn-bar').style.width = u.churn + '%';
+  document.getElementById('score-pct').textContent = u.score + '%';
+  document.getElementById('score-bar').style.width = u.score + '%';
+
+  // Risk badge
+  const badge = document.getElementById('risk-badge');
+  badge.className = 'risk-badge risk-' + u.risk;
+  badge.textContent = u.risk.toUpperCase() + ' RISK';
+
+  // Cluster label
+  document.getElementById('cluster-label').textContent = u.cluster;
+
+  // Recommendations
+  const recList = document.getElementById('rec-list');
+  recList.innerHTML = u.recs.map(r => `
+    <div class="rec-card ${r.priority}">
+      <div class="rec-header">
+        <span class="rec-title">${r.title}</span>
+        <span class="rec-type">${r.type}</span>
+      </div>
+      <div class="rec-msg">${r.msg}</div>
+    </div>
+  `).join('');
+
+  // Milestones
+  const mList = document.getElementById('milestone-list');
+  if (u.milestones.length === 0) {
+    mList.innerHTML = `<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">No milestones predicted — user needs re-engagement first.</div>`;
+  } else {
+    mList.innerHTML = u.milestones.map(m => `
+      <div class="milestone-row">
+        <span class="milestone-icon">${m.icon}</span>
+        <span class="milestone-name">${m.name}</span>
+        <span class="milestone-prob">${Math.round(m.prob * 100)}%</span>
+      </div>
+    `).join('');
+  }
+}
+
+function renderClusters() {
+  const grid = document.getElementById('cluster-grid');
+  grid.innerHTML = CLUSTERS.map((c, i) => `
+    <div class="cluster-card ${i === 0 ? 'selected' : ''}" onclick="highlightCluster(this)">
+      <div class="cluster-name">${c.name}</div>
+      <div class="cluster-pct" style="color:${c.color}">${c.pct}</div>
+      <div class="cluster-meta">n=${c.n} · churn ${c.churn} · score ${c.score.toFixed(2)}</div>
+      <div class="cluster-bar" style="background:${c.color};width:${parseFloat(c.pct)}%"></div>
+    </div>
+  `).join('');
+}
+
+function highlightCluster(el) {
+  document.querySelectorAll('.cluster-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function renderFeatureImportance() {
+  const max = FEATURES[0].imp;
+  document.getElementById('feat-importance').innerHTML = FEATURES.map(f => `
+    <div class="feat-row">
+      <span class="feat-name">${f.name}</span>
+      <div class="feat-bar-track">
+        <div class="feat-bar-fill" style="width:${(f.imp/max*100).toFixed(1)}%"></div>
+      </div>
+      <span class="feat-val">${f.imp.toFixed(4)}</span>
+    </div>
+  `).join('');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+renderUser(0);
+renderClusters();
+renderFeatureImportance();
+</script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+{
+  "silhouette_score": 0.2264,
+  "davies_bouldin_score": 1.4187,
+  "n_clusters": 4,
+  "k_sweep": {
+    "2": {
+      "silhouette": 0.3546,
+      "davies_bouldin": 1.088
+    },
+    "3": {
+      "silhouette": 0.3075,
+      "davies_bouldin": 1.4212
+    },
+    "4": {
+      "silhouette": 0.2462,
+      "davies_bouldin": 1.3543
+    },
+    "5": {
+      "silhouette": 0.2762,
+      "davies_bouldin": 1.151
+    },
+    "6": {
+      "silhouette": 0.2514,
+      "davies_bouldin": 1.25
+    },
+    "7": {
+      "silhouette": 0.2494,
+      "davies_bouldin": 1.3156
+    },
+    "8": {
+      "silhouette": 0.2526,
+      "davies_bouldin": 1.3099
+    }
+  }
+}

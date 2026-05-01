@@ -1,0 +1,176 @@
+{
+  "habit_formation": {
+    "model": "habit_formation",
+    "roc_auc": 0.9991,
+    "avg_precision": 0.9986,
+    "f1_score": 0.98,
+    "confusion_matrix": [
+      [
+        240,
+        5
+      ],
+      [
+        3,
+        152
+      ]
+    ],
+    "classification_report": {
+      "0": {
+        "precision": 0.9876543209876543,
+        "recall": 0.9795918367346939,
+        "f1-score": 0.9836065573770492,
+        "support": 245.0
+      },
+      "1": {
+        "precision": 0.9681528662420382,
+        "recall": 0.9806451612903225,
+        "f1-score": 0.9743589743589743,
+        "support": 155.0
+      },
+      "accuracy": 0.98,
+      "macro avg": {
+        "precision": 0.9779035936148462,
+        "recall": 0.9801184990125082,
+        "f1-score": 0.9789827658680117,
+        "support": 400.0
+      },
+      "weighted avg": {
+        "precision": 0.980097507273728,
+        "recall": 0.98,
+        "f1-score": 0.9800231189575451,
+        "support": 400.0
+      }
+    },
+    "cv_roc_auc_mean": 0.9979,
+    "cv_roc_auc_std": 0.0016,
+    "feature_importances": [
+      {
+        "feature": "duration_per_session",
+        "importance": 0.8926
+      },
+      {
+        "feature": "total_active_days_30d",
+        "importance": 0.0764
+      },
+      {
+        "feature": "engagement_velocity",
+        "importance": 0.0069
+      },
+      {
+        "feature": "social_ratio",
+        "importance": 0.0067
+      },
+      {
+        "feature": "social_actions",
+        "importance": 0.0063
+      },
+      {
+        "feature": "w1_sessions",
+        "importance": 0.0042
+      },
+      {
+        "feature": "age",
+        "importance": 0.0037
+      },
+      {
+        "feature": "consistency_rate",
+        "importance": 0.001
+      },
+      {
+        "feature": "total_sessions_30d",
+        "importance": 0.0008
+      },
+      {
+        "feature": "session_gap_std",
+        "importance": 0.0007
+      }
+    ]
+  },
+  "churn_prediction": {
+    "model": "churn_prediction",
+    "roc_auc": 0.977,
+    "avg_precision": 0.9505,
+    "f1_score": 0.9305,
+    "confusion_matrix": [
+      [
+        238,
+        19
+      ],
+      [
+        9,
+        134
+      ]
+    ],
+    "classification_report": {
+      "0": {
+        "precision": 0.9635627530364372,
+        "recall": 0.9260700389105059,
+        "f1-score": 0.9444444444444444,
+        "support": 257.0
+      },
+      "1": {
+        "precision": 0.8758169934640523,
+        "recall": 0.9370629370629371,
+        "f1-score": 0.9054054054054054,
+        "support": 143.0
+      },
+      "accuracy": 0.93,
+      "macro avg": {
+        "precision": 0.9196898732502448,
+        "recall": 0.9315664879867215,
+        "f1-score": 0.924924924924925,
+        "support": 400.0
+      },
+      "weighted avg": {
+        "precision": 0.9321936439893096,
+        "recall": 0.93,
+        "f1-score": 0.930487987987988,
+        "support": 400.0
+      }
+    },
+    "cv_roc_auc_mean": 0.9729,
+    "cv_roc_auc_std": 0.0036,
+    "feature_importances": [
+      {
+        "feature": "total_sessions_30d",
+        "importance": 0.7748
+      },
+      {
+        "feature": "session_gap_std",
+        "importance": 0.0555
+      },
+      {
+        "feature": "consistency_rate",
+        "importance": 0.0511
+      },
+      {
+        "feature": "engagement_velocity",
+        "importance": 0.0213
+      },
+      {
+        "feature": "social_actions",
+        "importance": 0.018
+      },
+      {
+        "feature": "age",
+        "importance": 0.017
+      },
+      {
+        "feature": "duration_per_session",
+        "importance": 0.0114
+      },
+      {
+        "feature": "routine_encoded",
+        "importance": 0.0088
+      },
+      {
+        "feature": "streak_to_days_ratio",
+        "importance": 0.0084
+      },
+      {
+        "feature": "w2_sessions",
+        "importance": 0.0083
+      }
+    ]
+  }
+}

@@ -1,0 +1,58 @@
+[
+  {
+    "cluster_id": 0,
+    "label": "Habit Champions",
+    "size": 635,
+    "pct_of_total": 31.8,
+    "avg_consistency_rate": 0.262,
+    "avg_max_streak": 2.1,
+    "avg_habit_score": 0.4,
+    "churn_rate": 0.198,
+    "retention_rate": 0.389,
+    "avg_sessions_30d": 9.0,
+    "avg_workouts_logged": 3.6,
+    "avg_social_actions": 5.9
+  },
+  {
+    "cluster_id": 1,
+    "label": "Steady Builders",
+    "size": 564,
+    "pct_of_total": 28.2,
+    "avg_consistency_rate": 0.111,
+    "avg_max_streak": 1.5,
+    "avg_habit_score": 0.248,
+    "churn_rate": 0.73,
+    "retention_rate": 0.0,
+    "avg_sessions_30d": 3.6,
+    "avg_workouts_logged": 0.8,
+    "avg_social_actions": 1.4
+  },
+  {
+    "cluster_id": 2,
+    "label": "Casual Dabblers",
+    "size": 518,
+    "pct_of_total": 25.9,
+    "avg_consistency_rate": 0.457,
+    "avg_max_streak": 4.0,
+    "avg_habit_score": 0.612,
+    "churn_rate": 0.014,
+    "retention_rate": 0.986,
+    "avg_sessions_30d": 16.4,
+    "avg_workouts_logged": 11.2,
+    "avg_social_actions": 14.5
+  },
+  {
+    "cluster_id": 3,
+    "label": "At-Risk Dropouts",
+    "size": 283,
+    "pct_of_total": 14.1,
+    "avg_consistency_rate": 0.093,
+    "avg_max_streak": 1.1,
+    "avg_habit_score": 0.1,
+    "churn_rate": 0.601,
+    "retention_rate": 0.064,
+    "avg_sessions_30d": 3.1,
+    "avg_workouts_logged": 0.9,
+    "avg_social_actions": 1.6
+  }
+]
